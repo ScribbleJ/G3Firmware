@@ -62,6 +62,8 @@ int main() {
 		runHostSlice();
 		// Command handling thread.
 		command::runCommandSlice();
+		// Motherboard maint thread.
+		Motherboard::getBoard().runMotherboardSlice();
 	}
 	return 0;
 }

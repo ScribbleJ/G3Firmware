@@ -80,12 +80,14 @@ public:
 		if (counter >= 0) {
 			interface->setDirection(direction);
 			counter -= intervals;
-			if (direction) {
-				if (!interface->isAtMaximum()) interface->step(true);
-				position++;
-			} else {
-				if (!interface->isAtMinimum()) interface->step(true);
-				position--;
+			if (!interface->estopTriggered()) {
+				if(direction) {
+					if (!interface->isAtMaximum()) interface->step(true);
+					position++;
+				} else {
+					if (!interface->isAtMinimum()) interface->step(true);
+					position--;
+				}
 			}
 			interface->step(false);
 		}

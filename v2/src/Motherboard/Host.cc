@@ -57,10 +57,11 @@ void runHostSlice() {
 	if (do_host_reset) {
 		do_host_reset = false;
 		// Then, reset local board
-		reset(false);
+		::reset(false);
 		packet_in_timeout.abort();
 
 		// TODO: Reset the extruder board.
+		// Incorrect; ::reset resets the extruder as well.
 
 		return;
 	}
@@ -252,6 +253,7 @@ inline void handleNextFilename(const InPacket& from_host, OutPacket& to_host) {
 	to_host.append8(0);
 }
 
+// SJTODO: ... assumes 1 toolhead!
 void doToolPause(OutPacket& to_host) {
 	Timeout acquire_lock_timeout;
 	acquire_lock_timeout.start(HOST_TOOL_RESPONSE_TIMEOUT_MS);
@@ -326,7 +328,7 @@ inline void handleToolQuery(const InPacket& from_host, OutPacket& to_host) {
 	}
 }
 
-inline void handlePause(const InPacket& from_host, OutPacket& to_host) {
+void handlePause(const InPacket& from_host, OutPacket& to_host) {
 	command::pause(!command::isPaused());
 	doToolPause(to_host);
 	to_host.append8(RC_OK);
@@ -433,6 +435,9 @@ bool processQueryPacket(const InPacket& from_host, OutPacket& to_host) {
 				return true;
 			case HOST_CMD_TOOL_QUERY:
 				handleToolQuery(from_host,to_host);
+#if HAS_LCD
+				Motherboard::getBoard().querySniffer(from_host, to_host);
+#endif
 				return true;
 			case HOST_CMD_IS_FINISHED:
 				handleIsFinished(from_host,to_host);

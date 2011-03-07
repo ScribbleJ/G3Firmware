@@ -47,6 +47,16 @@ bool StepperInterface::isAtMinimum() {
 	return v;
 }
 
+bool StepperInterface::estopTriggered() {
+	if(estop_triggered) return true;
+	if (estop_pin.isNull()) return false;
+	if(estop_pin.getValue()) return false;
+	estop_triggered = true;
+	estop_pin.setDirection(true);
+	estop_pin.setValue(1);
+	return true;
+}
+
 void StepperInterface::init(uint8_t idx) {
 	dir_pin.setDirection(true);
 	step_pin.setDirection(true);
@@ -72,4 +82,9 @@ void StepperInterface::init(uint8_t idx) {
 		min_pin.setDirection(false);
 		min_pin.setValue(invert_endstops);
 	}
+	
+	// Hardcoded.
+	estop_triggered = false;
+	estop_pin.setDirection(false);
+	estop_pin.setValue(1);
 }

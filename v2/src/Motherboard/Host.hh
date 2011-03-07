@@ -21,5 +21,6 @@
 #include "Packet.hh"
 
 void runHostSlice();
+void handlePause(const InPacket&, OutPacket&);
 
 #endif // HOST_HH_

@@ -34,6 +34,9 @@ public:
 	bool isAtMaximum();
 	/// True if the axis has triggered its minimum endstop
 	bool isAtMinimum();
+	/// True if the anything has triggered estop
+	bool estopTriggered();
+
 
 private:
 	/// Initialize the pins for the interface
@@ -45,20 +48,24 @@ private:
 	Pin enable_pin;
 	Pin max_pin;
 	Pin min_pin;
+	Pin estop_pin;
 	bool invert_endstops;
 	bool invert_axis;
+	bool estop_triggered;
 	/// Default constructor
 	StepperInterface() {}
 	StepperInterface(const Pin& dir,
 			const Pin& step,
 			const Pin& enable,
 			const Pin& max,
-			const Pin& min) :
+			const Pin& min,
+			const Pin& estop) :
 				dir_pin(dir),
 				step_pin(step),
 				enable_pin(enable),
 				max_pin(max),
 				min_pin(min),
+				estop_pin(estop),
 				invert_endstops(true),
 				invert_axis(false)
 	{}

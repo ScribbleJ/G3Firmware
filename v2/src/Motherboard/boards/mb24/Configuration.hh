@@ -98,7 +98,10 @@
 // The X minimum endstop pin (active high)
 #define X_MIN_PIN       Pin(PortB,6)
 // The X maximum endstop pin (active high)
-#define X_MAX_PIN       Pin(PortB,5)
+//#define X_MAX_PIN       Pin(PortB,5)
+#define X_MAX_PIN       Pin()
+// How many steps make 1mm?
+#define X_STEPS_PER_MM_TIMES_1000 47069  
 
 // The Y stepper step pin (active on rising edge)
 #define Y_STEP_PIN      Pin(PortA,3)
@@ -110,6 +113,9 @@
 #define Y_MIN_PIN       Pin(PortB,4)
 // The Y maximum endstop pin (active high)
 #define Y_MAX_PIN       Pin(PortH,6)
+// How many steps make 1mm?
+#define Y_STEPS_PER_MM_TIMES_1000 47069  
+
 
 // The Z stepper step pin (active on rising edge)
 #define Z_STEP_PIN      Pin(PortA,0)
@@ -121,6 +127,9 @@
 #define Z_MIN_PIN       Pin(PortH,5)
 // The Z maximum endstop pin (active high)
 #define Z_MAX_PIN       Pin(PortH,4)
+// How many steps make 1mm?
+#define Z_STEPS_PER_MM_TIMES_1000 200000
+
 
 // The A stepper step pin (active on rising edge)
 #define A_STEP_PIN      Pin(PortJ,0)
@@ -128,6 +137,9 @@
 #define A_DIR_PIN       Pin(PortJ,1)
 // The A stepper enable pin (active low)
 #define A_ENABLE_PIN    Pin(PortE,5)
+// How many steps make 1mm?
+#define A_STEPS_PER_MM_TIMES_1000 50235  
+
 
 // The B stepper step pin (active on rising edge)
 #define B_STEP_PIN      Pin(PortG,5)
@@ -135,6 +147,71 @@
 #define B_DIR_PIN       Pin(PortE,3)
 // The B stepper enable pin (active low)
 #define B_ENABLE_PIN    Pin(PortH,3)
+// How many steps make 1mm?
+#define B_STEPS_PER_MM_TIMES_1000 50235  
+
+
+// SCRIBBLEJHACK - LCD
+#define HAS_LCD         1
+
+#define LCD_RS_PIN      Pin(PortC,3)
+#define LCD_RW_PIN      Pin(PortC,2)
+#define LCD_E_PIN       Pin(PortC,0)
+#define LCD_0_PIN       Pin(PortG,2)
+#define LCD_1_PIN       Pin(PortG,0)
+#define LCD_2_PIN       Pin(PortL,6)
+#define LCD_3_PIN       Pin(PortC,1)
+#define LCD_4_PIN       Pin(PortD,7)
+#define LCD_5_PIN       Pin(PortG,1)
+#define LCD_6_PIN       Pin(PortL,7)
+#define LCD_7_PIN       Pin(PortL,5)
+
+#define LCD_X 16
+#define LCD_Y 2
+
+
+// Used to report on LCD.
+#define NUM_TOOLS       2
+#define PLATFORM_HEATER_TOOLNUM 1
+// EXTRACHARS must be length of string.
+#define LCD_EXTRASTRING ""
+#define LCD_EXTRACHARS 0
+#define LCD_TEMP_UPDATE_INTERVAL_MICROS 2000000
+// My Newhaven starts each line in memory after the previous.
+// The hitachi standard starts each line offset by 40h
+// GOOD FOR HITACHI/STANDARD 16CHAR
+#define LCD_LINESTARTS {0x0, 0x40}
+//GOOD FOR NEWHAVEN 20CHAR
+//#define LINESTARTS {0x0, 0x10}
+// My Newhaven can only address every other character. 
+// The hitachi standard can address each char individually.
+#define LCD_FULLADDRESS 1
+
+// How many lines of logging data to keep/present
+#define LOG_LINES	10
+// How many chars in a filename?
+#define LCD_MAX_FILE_LEN  32
+
+#define FILE_QUEUE_LEN  10
+
+
+#define HAS_KEYPAD	1
+#define KP_COLS		3
+#define KP_ROWS		4
+#define KP_KEYMAP	{ {'1','2','3'},{'4','5','6'},{'7','8','9'},{'*','0','#'} }
+#define KP_COL1_PIN	Pin(PortL,0)
+#define KP_COL2_PIN	Pin(PortL,4)
+#define KP_COL3_PIN	Pin(PortL,1)
+#define KP_ROW1_PIN	Pin(PortL,2)
+#define KP_ROW2_PIN	Pin(PortC,4)
+#define KP_ROW3_PIN	Pin(PortB,5)
+#define KP_ROW4_PIN	Pin(PortL,3)
+#define KP_COL_PINS     { KP_COL1_PIN, KP_COL2_PIN, KP_COL3_PIN }
+#define KP_ROW_PINS     { KP_ROW1_PIN, KP_ROW2_PIN, KP_ROW3_PIN, KP_ROW4_PIN }
+
+#define KP_DEBOUNCE     50
+
+
 
 // --- Debugging configuration ---
 // The pin which controls the debug LED (active high)

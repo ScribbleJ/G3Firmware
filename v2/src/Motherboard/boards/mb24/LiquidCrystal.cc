@@ -25,26 +25,34 @@
 
 LiquidCrystal::LiquidCrystal(Pin rs, Pin rw, Pin enable,
 			     Pin d0, Pin d1, Pin d2, Pin d3,
-			     Pin d4, Pin d5, Pin d6, Pin d7)
+			     Pin d4, Pin d5, Pin d6, Pin d7) : commandQueue(LCD_BUFFER_SIZE, command_data),
+							       modeQueue(LCD_BUFFER_SIZE, mode_data) 
+
 {
   init(0, rs, rw, enable, d0, d1, d2, d3, d4, d5, d6, d7);
 }
 
 LiquidCrystal::LiquidCrystal(Pin rs, Pin enable,
 			     Pin d0, Pin d1, Pin d2, Pin d3,
-			     Pin d4, Pin d5, Pin d6, Pin d7)
+			     Pin d4, Pin d5, Pin d6, Pin d7) : commandQueue(LCD_BUFFER_SIZE, command_data),
+							       modeQueue(LCD_BUFFER_SIZE, mode_data) 
+
 {
   init(0, rs, Pin(), enable, d0, d1, d2, d3, d4, d5, d6, d7);
 }
 
 LiquidCrystal::LiquidCrystal(Pin rs, Pin rw, Pin enable,
-			     Pin d0, Pin d1, Pin d2, Pin d3)
+			     Pin d0, Pin d1, Pin d2, Pin d3) : commandQueue(LCD_BUFFER_SIZE, command_data),
+							       modeQueue(LCD_BUFFER_SIZE, mode_data) 
+
 {
   init(1, rs, rw, enable, d0, d1, d2, d3, Pin(), Pin(), Pin(), Pin());
 }
 
 LiquidCrystal::LiquidCrystal(Pin rs,  Pin enable,
-			     Pin d0, Pin d1, Pin d2, Pin d3)
+			     Pin d0, Pin d1, Pin d2, Pin d3) : commandQueue(LCD_BUFFER_SIZE, command_data),
+							       modeQueue(LCD_BUFFER_SIZE, mode_data) 
+
 {
   init(1, rs, Pin(), enable, d0, d1, d2, d3, Pin(), Pin(), Pin(), Pin());
 }
@@ -76,15 +84,18 @@ void LiquidCrystal::init(uint8_t fourbitmode, Pin rs, Pin rw, Pin enable,
   else 
     _displayfunction = LCD_8BITMODE | LCD_1LINE | LCD_5x8DOTS;
   
-  begin(16, 1);  
+  // begin(16, 1);  
 }
 
-void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
+void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t linestarts[], uint8_t dotsize) {
   if (lines > 1) {
     _displayfunction |= LCD_2LINE;
   }
   _numlines = lines;
+  _numcols  = cols;
   _currline = 0;
+  _linestarts = linestarts;
+
 
   // for some 1 line displays you can select a 10 pixel high font
   if ((dotsize != 0) && (lines == 1)) {
@@ -158,23 +169,24 @@ void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
 void LiquidCrystal::clear()
 {
   command(LCD_CLEARDISPLAY);  // clear display, set cursor position to zero
-  _delay_us(2000);  // this command takes a long time!
+  // _delay_us(2000);  // this command takes a long time!  NOT ACCORDING TO MY DOCS, IT'S THE FASTEST COMMAND THERE IS.
 }
 
 void LiquidCrystal::home()
 {
   command(LCD_RETURNHOME);  // set cursor position to zero
-  _delay_us(2000);  // this command takes a long time!
+  // _delay_us(2000);  // this command takes a long time! NOPE.
 }
 
 void LiquidCrystal::setCursor(uint8_t col, uint8_t row)
 {
-  int row_offsets[] = { 0x00, 0x40, 0x14, 0x54 };
-  if ( row > _numlines ) {
-    row = _numlines-1;    // we count rows starting w/0
-  }
-  
-  command(LCD_SETDDRAMADDR | (col + row_offsets[row]));
+  //cols,lines  
+  //int offset = col + (_numcols * (row));  
+  // col/2 because display can only address every other character, didn't know how to best address that issue!
+  // At least this way unaware callers get something close?  dunnowhatsbesthere.
+  int offset   = _linestarts[row] + col;
+
+  command(LCD_SETDDRAMADDR | (offset));
 }
 
 // Turn the display on/off (quickly)
@@ -251,12 +263,26 @@ void LiquidCrystal::createChar(uint8_t location, uint8_t charmap[]) {
 
 /*********** mid level commands, for sending data/cmds */
 
-inline void LiquidCrystal::command(uint8_t value) {
-  send(value, false);
+void LiquidCrystal::command(uint8_t value) {
+  sendQueued(value, false);
 }
 
-inline void LiquidCrystal::write(uint8_t value) {
-  send(value, true);
+void LiquidCrystal::write(uint8_t value) {
+  sendQueued(value, true);
+}
+
+void LiquidCrystal::writestr(char *str, uint8_t len) {
+  for(int x = 0; x < len; x++) write(str[x]);
+}
+
+void LiquidCrystal::writeint16(uint16_t d, uint16_t maxradix)
+{
+	uint16_t n = d;
+	for(uint16_t i = maxradix; i >= 1; i = i/10)
+	{
+		write((uint8_t)(n/i) + '0');
+		n -= (n/i) * i; // This looks like nonsense but it chops off the remainder.
+	}
 }
 
 /************ low level data pushing commands **********/
@@ -274,9 +300,42 @@ void LiquidCrystal::send(uint8_t value, bool mode) {
     write8bits(value); 
   } else {
     write4bits(value>>4);
+    pulseEnable();
     write4bits(value);
   }
+    pulseEnable();
 }
+
+void LiquidCrystal::sendQueued(uint8_t value, bool mode) {
+	// Shoudl check for capacity here, but ... meh... what do we reasonably do if it's full?
+	commandQueue.push(value);
+	modeQueue.push(mode); 
+}
+
+void LiquidCrystal::deQueue()
+{
+  if(commandQueue.isEmpty())
+	return;
+
+  uint8_t value = commandQueue.pop();
+  uint8_t mode  = modeQueue.pop();
+
+  _rs_pin.setValue(mode);
+
+  // if there is a RW pin indicated, set it low to Write
+  if (!_rw_pin.isNull()) {
+    _rw_pin.setValue(false);
+  }
+  
+  write8bits(value); 
+  quickerPulseEnable();
+}
+
+void LiquidCrystal::handleUpdates()
+{
+  deQueue();
+}
+
 
 void LiquidCrystal::pulseEnable(void) {
   _enable_pin.setValue(false);
@@ -284,8 +343,20 @@ void LiquidCrystal::pulseEnable(void) {
   _enable_pin.setValue(true);
   _delay_us(1);    // enable pulse must be >450ns
   _enable_pin.setValue(false);
-  _delay_us(100);   // commands need > 37us to settle
+  _delay_us(80);   // commands need > 37us to settle
 }
+
+void LiquidCrystal::quickerPulseEnable(void) {
+  _enable_pin.setValue(false);
+  _delay_us(1);
+  _enable_pin.setValue(true);
+  _delay_us(1);    // enable pulse must be >450ns
+  _enable_pin.setValue(false);
+  // This delay will be ensured elsewhere.
+  //_delay_us(80);   // commands need > 72us to settle
+}
+
+
 
 void LiquidCrystal::write4bits(uint8_t value) {
   for (int i = 0; i < 4; i++) {
@@ -302,5 +373,4 @@ void LiquidCrystal::write8bits(uint8_t value) {
     _data_pins[i].setValue(((value >> i) & 0x01) != 0);
   }
   
-  pulseEnable();
 }

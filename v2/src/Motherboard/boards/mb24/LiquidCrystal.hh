@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "AvrPort.hh"
+#include "CircularBuffer.hh"
 
 // commands
 #define LCD_CLEARDISPLAY 0x01
@@ -42,6 +43,11 @@
 #define LCD_5x10DOTS 0x04
 #define LCD_5x8DOTS 0x00
 
+#define LCD_BUFFER_SIZE 256
+
+typedef CircularBufferTempl<bool> CircularBoolBuffer;
+
+
 class LiquidCrystal {
 public:
   LiquidCrystal(Pin rs, Pin enable,
@@ -59,7 +65,7 @@ public:
 	    Pin d0, Pin d1, Pin d2, Pin d3,
 	    Pin d4, Pin d5, Pin d6, Pin d7);
     
-  void begin(uint8_t cols, uint8_t rows, uint8_t charsize = LCD_5x8DOTS);
+  void begin(uint8_t cols, uint8_t rows, uint8_t rowstarts[], uint8_t charsize = LCD_5x8DOTS);
 
   void clear();
   void home();
@@ -79,13 +85,21 @@ public:
 
   void createChar(uint8_t, uint8_t[]);
   void setCursor(uint8_t, uint8_t); 
-  virtual void write(uint8_t);
+  void write(uint8_t);
+  void writestr(char *, uint8_t);
+  void writeint16(uint16_t, uint16_t);
   void command(uint8_t);
+  // To be called every ~100us when using queued sends.
+  void handleUpdates();
+
 private:
   void send(uint8_t, bool);
+  void sendQueued(uint8_t, bool);
+  void deQueue();
   void write4bits(uint8_t);
   void write8bits(uint8_t);
   void pulseEnable();
+  void quickerPulseEnable();
 
   Pin _rs_pin; // LOW: command.  HIGH: character.
   Pin _rw_pin; // LOW: write to LCD.  HIGH: read from LCD.
@@ -99,6 +113,14 @@ private:
   uint8_t _initialized;
 
   uint8_t _numlines,_currline;
+  uint8_t _numcols;
+  uint8_t *_linestarts;
+
+  uint8_t command_data[LCD_BUFFER_SIZE];
+  bool    mode_data[LCD_BUFFER_SIZE];
+  CircularBuffer commandQueue;
+  CircularBoolBuffer modeQueue;
+  
 };
 
 #endif // LIQUID_CRYSTAL_HH

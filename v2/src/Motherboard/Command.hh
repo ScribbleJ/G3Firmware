@@ -59,6 +59,11 @@ bool isEmpty();
  */
 void push(uint8_t byte);
 
+/**
+ * Push a byte onto the override buffer.
+ */
+void push_override(uint8_t byte);
+
 }
 
 #endif // COMMAND_HH_

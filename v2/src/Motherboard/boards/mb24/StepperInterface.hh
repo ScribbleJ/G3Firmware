@@ -51,7 +51,7 @@ private:
 	Pin estop_pin;
 	bool invert_endstops;
 	bool invert_axis;
-	bool estop_triggered;
+	volatile bool estop_triggered;
 	/// Default constructor
 	StepperInterface() {}
 	StepperInterface(const Pin& dir,

@@ -251,6 +251,9 @@ void enableAxis(uint8_t which, bool enable) {
 }
 
 bool doInterrupt() {
+	if (axes[0].interface->estopTriggered())
+		return false;
+
 	if (is_running) {
 		if (intervals_remaining-- == 0) {
 			is_running = false;
